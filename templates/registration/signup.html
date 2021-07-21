@@ -1,0 +1,29 @@
+{% extends "registration/layout.html" %}
+
+{% block content %}
+    <div class="main">
+        <div class="content">
+            <div class="img-container">
+                <a href="/" class="img-link">
+                    <div class="img-link"
+                         style="background-image: url('{{ url_for('static', path='img/chat.png') }}'); background-size: contain">
+                    </div>
+                </a>
+            </div>
+            <form action="/auth/signup/" method="post" class="form-container">
+                <div class="form-header"><strong>Sign Up</strong></div>
+                <br>
+                <input type="text" class="form-input" name="username" placeholder="Username"/>
+                <br>
+                <input type="password" class="form-input" name="password1" placeholder="Password"/>
+                <br>
+                <input type="password" class="form-input" name="password2" placeholder="Confirm Password"/>
+                <br>
+                <button type="submit" class="form-btn">Sign Up</button>
+            </form>
+            <div style="margin: 1rem; text-align: center">
+                <a class="link-light" href="/auth/login">Already have an account? Login.</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
