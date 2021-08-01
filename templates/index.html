@@ -4,23 +4,56 @@
     <input type="hidden" value="{{ user.id }}" id="user-id">
     <input type="hidden" value="{{ user.username }}" id="user-nane">
     <input type="hidden" value="{{ request.base_url.hostname }}" id="hostname">
-    <div id="sidebar" class="sidebar active">
+    <input type="hidden" value="{{ chat_type.PRIVATE.value }}" id="chat-type-private">
+    <input type="hidden" value="{{ chat_type.GROUP.value }}" id="chat-type-group">
+    <input type="hidden" value="{{ chat_action.CONNECT.value }}" id="chat-action-connect">
+    <input type="hidden" value="{{ chat_action.DISCONNECT.value }}" id="chat-action-disconnect">
+    <input type="hidden" value="{{ chat_action.CREATE.value }}" id="chat-action-create">
+    <input type="hidden" value="{{ chat_action.REMOVE.value }}" id="chat-action-remove">
+    <input type="hidden" value="{{ chat_action.LEAVE.value }}" id="chat-action-leave">
+    <div id="sidebar" class="sidebar active scroll-bar-custom">
+        <div class="user-box">
+            <div class="col-3">
+                <div class="user-image-box">
+                    <div class="user-image" style="background-color: {{ user.color }};">{{ user.username[0] }}</div>
+                </div>
+            </div>
+            <div class="col-8">
+                <div class="user-box-info">{{ user.username }}</div>
+            </div>
+            <div id="user-menu-btn" class="col-1 user-menu-button">
+                <div class="user-menu-dropdown">
+                    <span id="group-create-modal-btn" class="contact-menu-entry">Create group</span>
+                    <a href="/auth/logout" class="contact-menu-entry">Logout</a>
+                </div>
+            </div>
+        </div>
         <div class="search-bar">
             <input id="search-input" class="search-input" placeholder="Search...">
         </div>
-        <div id="contact-box" class="contact-box">
-            {% for c in contacts %}
+        <div id="chats-box" class="contact-box">
+            {% for c in chats %}
                 <div class="contact">
-                    <a href="#{{ c.username }}" id="{{ c.id }}" class="contact-link col-9">{{ c.username }}</a>
-                    <div class="col-1">
-                        <svg id="status-{{ c.id }}" viewBox="0 0 100 100" style="width: 0.4rem; height: 0.4rem"
-                             xmlns="http://www.w3.org/2000/svg" fill="#dddddd">
-                            <circle cx="50" cy="50" r="50"></circle>
-                        </svg>
-                    </div>
+                    <a href="#{{ c.name }}" id="{{ c.id }}" data-type="{{ c.type }}"
+                       data-user-id="{% if c.type == chat_type.PRIVATE.value %}{{ c.participants[0].id }}{% else %}{{ c.creator }}{% endif %}"
+                       class="contact-link col-{% if c.type == chat_type.PRIVATE.value %}9{% else %}10{% endif %}">{{ c.name }}</a>
+                    {% if c.type == chat_type.PRIVATE.value %}
+                        <div class="col-1">
+                            <svg id="status-{{ c.participants[0].id }}" viewBox="0 0 100 100"
+                                 style="width: 0.4rem; height: 0.4rem"
+                                 xmlns="http://www.w3.org/2000/svg" fill="#dddddd">
+                                <circle cx="50" cy="50" r="50"></circle>
+                            </svg>
+                        </div>
+                    {% endif %}
                     <div class="contact-menu-btn col-2">
-                        <div id="{{ c.id }}-menu" class="contact-menu-dropdown">
-                            <a href="#remove" class="contact-menu-entry remove">Remove</a>
+                        <div id="menu-{{ c.id }}" class="contact-menu-dropdown">
+                            {% if c.type == chat_type.GROUP.value %}
+                                <span class="contact-menu-entry info-btn">Info</span>
+                                <span class="contact-menu-entry remove-btn">{% if c.creator == user.id %}Remove{% else %}Leave Group{% endif %}</span>
+                            {% else %}
+                                <span class="contact-menu-entry remove-btn">Remove</span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -48,7 +81,7 @@
             {% endif %}
         </div>
         <div id="chat-box">
-            {% for c in contacts %}
+            {% for c in chats %}
                 <div style="display: none" id="chat-{{ c.id }}" class="chat-messages"></div>
             {% endfor %}
         </div>
@@ -64,6 +97,38 @@
             </button>
         </div>
     </div>
+    <!-- MODAL START -->
+    <div id="group-create-modal" class="modal-overlay">
+        <div class="modal modal-small">
+            <div class="modal-header">
+                <div class="col-10">
+                    Create New Group
+                </div>
+                <div class="col-2" style="text-align: end">
+                    <button class="btn btn-transparent modal-close" style="font-size: x-large; color: #ffffff;">
+                        <strong>&times;</strong>
+                    </button>
+                </div>
+            </div>
+            <div id="group-create-content" class="modal-content scroll-bar-custom">
+                <input type="text" class="form-input w-100 mb-3" style="font-size: large" id="group-name-input" placeholder="Group Name"/>
+                {% for chat in chats %}
+                    {% if chat.type == chat_type.PRIVATE.value %}
+                        <div class="checkbox-container" id="contact-{{ chat.participants[0].id }}">
+                            <input id="check-{{ chat.participants[0].id }}" type="checkbox" class="custom-checkbox group-checkbox">
+                            <label for="check-{{ chat.participants[0].id }}" class="checkbox-label"
+                                   style="flex-grow: 1">{{ chat.participants[0].username }}</label>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="modal-footer" style="justify-content: flex-end">
+                <button id="group-create-btn" class="btn btn-primary mr-3">Create</button>
+                <button class="btn btn-info modal-close">close</button>
+            </div>
+        </div>
+    </div>
+    <!-- MODAL END -->
 {% endblock %}
 
 {% block scripts %}
@@ -71,3 +136,22 @@
         setup();
     </script>
 {% endblock %}
+
+{# <div id="contact-box" class="contact-box" style="display: none;">#}
+{#     {% for c in contacts %}#}
+{#         <div class="contact">#}
+{#             <a href="#{{ c.username }}" id="contact-{{ c.id }}" class="contact-link col-9">{{ c.username }}</a>#}
+{#             <div class="col-1">#}
+{#                 <svg id="status-{{ c.id }}" viewBox="0 0 100 100" style="width: 0.4rem; height: 0.4rem"#}
+{#                      xmlns="http://www.w3.org/2000/svg" fill="#dddddd">#}
+{#                     <circle cx="50" cy="50" r="50"></circle>#}
+{#                 </svg>#}
+{#             </div>#}
+{#             <div class="contact-menu-btn col-2">#}
+{#                 <div id="{{ c.id }}-menu" class="contact-menu-dropdown">#}
+{#                     <a href="#remove" class="contact-menu-entry remove">Remove</a>#}
+{#                 </div>#}
+{#             </div>#}
+{#         </div>#}
+{#     {% endfor %}#}
+{# </div>#}

@@ -1,6 +1,15 @@
+#
+#          |   _)  |
+#   |   |  __|  |  |   __|     __ \   |   |
+#   |   |  |    |  | \__ \     |   |  |   |
+#  \__,_| \__| _| _| ____/ _)  .__/  \__, |
+#                             _|     ____/
+#
+
 from sqlalchemy.ext.asyncio import create_async_engine
-from auth.utils import get_user_contacts
+from chat.utils import get_user_contacts
 from config.settings import get_settings
+from chat.constants import ChatAction
 from typing import Dict, Optional
 from fastapi import WebSocket
 from redis import Redis
@@ -73,38 +82,37 @@ class WSUserConnectionManager(metaclass=Singleton):
     async def connect(self, user_id: int, websocket: WebSocket):
         await websocket.accept()
         self.connections[user_id] = websocket
-        await self.notify_subscribers(json.dumps({'sender': user_id, 'action': 'connect'}))
+        await self.notify_subscribers(json.dumps({'sender': user_id, 'action': ChatAction.CONNECT.value}))
 
     async def disconnect(self, user_id: int):
         self.connections.pop(user_id)
-        await self.notify_subscribers(json.dumps({'sender': user_id, 'action': 'disconnect'}))
+        await self.notify_subscribers(json.dumps({'sender': user_id, 'action': ChatAction.DISCONNECT.value}))
 
     async def match(self, user_id: int) -> Optional[WebSocket]:
-        try:
-            return self.connections[user_id]
-        except:
-            return None
+        return self.connections[user_id] if user_id in self.connections else None
 
-    async def notify_subscribers(self, data):
+    async def notify_subscribers(self, data: str):
         rc_manager.publish('user', data)
 
-    async def chat_action(self, data):
-        ws = await self.match(int(data['receiver']))
-        if ws:
-            data = json.dumps(data)
-            await ws.send_text(data)
+    async def chat_action(self, data: dict):
+        receivers = data['receivers']
+        data = json.dumps(data)
+        for r in receivers:
+            ws = await self.match(r)
+            if ws:
+                await ws.send_text(data)
 
-    async def notify_contacts(self, data):
+    async def notify_contacts(self, data: dict):
         db = create_async_engine(settings.DATABASE_URL)
-        sender_id = int(data['sender'])
-        contacts = await get_user_contacts(sender_id, db)
-        sender_ws = await self.match(sender_id)
+        sender_id = data['sender']
+        filter_contacts = data['receivers'] if 'receivers' in data else None
+        contacts = await get_user_contacts(sender_id, filter_contacts, db)
         for c in contacts:
             ws = await self.match(c.id)
             if ws:
                 await ws.send_text(json.dumps(data))
-                if sender_ws:
-                    await sender_ws.send_text(json.dumps({'sender': c.id, 'action': 'connect'}))
+                response = json.dumps({'sender': c.id, 'receivers': [sender_id], 'action': ChatAction.CONNECT.value})
+                await self.notify_subscribers(response)
         await db.dispose()
 
 
@@ -122,14 +130,13 @@ class Listener(threading.Thread):
         for msg in self.pubsub.listen():
             try:
                 channel = msg['channel'].decode('utf-8')
+                data = json.loads(msg['data'])
                 if channel == 'chat':
-                    data = json.loads(msg['data'])
                     asyncio.run(ws_chat_manager.send_message(data['chat'], data['message']))
                 elif channel == 'user':
-                    data = json.loads(msg['data'])
-                    if data['action'] in ['create', 'remove']:
+                    if data['action'] in [ChatAction.CREATE.value, ChatAction.REMOVE.value]:
                         asyncio.run(ws_user_manager.chat_action(data))
-                    elif data['action'] in ['connect', 'disconnect']:
+                    elif data['action'] in [ChatAction.CONNECT.value, ChatAction.DISCONNECT.value]:
                         asyncio.run(ws_user_manager.notify_contacts(data))
             except Exception as e:
                 print(e)

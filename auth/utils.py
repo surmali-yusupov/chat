@@ -1,15 +1,14 @@
 from .exceptions import UserNotFound, IncorrectPassword, notAuthenticated
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
-from .schemes import User, LoginModel, Contact
-from .models import UserTable, ContactTable
 from passlib.context import CryptContext
 from datetime import timedelta, datetime
 from config.settings import get_settings
-from typing import Optional, Dict, List
+from .schemes import User, LoginModel
 from fastapi.security import OAuth2
-from pydantic import parse_obj_as
+from typing import Optional, Dict
 from database.database import db
+from .models import UserTable
 from fastapi import Request
 from jose import jwt
 
@@ -49,8 +48,13 @@ async def authenticate_user(username: str, password: str) -> LoginModel:
 
 
 async def create_user(username: str, password: str, is_active=True, is_superuser=False):
+    color = await generate_user_color(username)
     query = UserTable.insert() \
-        .values(username=username, password=password, is_active=is_active, is_superuser=is_superuser)
+        .values(username=username,
+                password=password,
+                is_active=is_active,
+                is_superuser=is_superuser,
+                color=color)
     async with db.connect() as conn:
         await conn.execute(query)
         await conn.commit()
@@ -92,12 +96,13 @@ class OAuth2PasswordBearerCookie(OAuth2):
         return param
 
 
-async def get_user_contacts(id: int, engine=None) -> List[Contact]:
-    db_engine = engine if engine else db
-    async with db_engine.connect() as conn:
-        q = UserTable.select().with_only_columns([UserTable.c.id, UserTable.c.username]) \
-            .where(ContactTable.c.user_id1 == id) \
-            .join(ContactTable, ContactTable.c.user_id2 == UserTable.c.id)
-        response = await conn.execute(q)
-        data = response.fetchall()
-        return parse_obj_as(List[Contact], data)
+async def generate_user_color(username: str):
+    sum = 0
+    bg_color = '#'
+    for letter in username:
+        sum += ord(letter)
+    for i in range(3):
+        x = sum % 256
+        sum -= x * ((i + 1) * 42)
+        bg_color += format(max(min(x, 160), 30), '02x')
+    return bg_color

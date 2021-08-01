@@ -21,7 +21,8 @@ fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from auth.models import UserTable, ContactTable
+from chat.models import ChatTable, ParticipantTable
+from auth.models import UserTable
 from database.database import metadata
 
 target_metadata = metadata

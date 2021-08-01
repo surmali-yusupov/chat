@@ -1,3 +1,11 @@
+#
+#                    _)
+#   __ `__ \    _` |  |  __ \      __ \   |   |
+#   |   |   |  (   |  |  |   |     |   |  |   |
+#  _|  _|  _| \__,_| _| _|  _| _)  .__/  \__, |
+#                                 _|     ____/
+#
+
 from auth.oauth import get_current_active_user
 from fastapi import FastAPI, Request, Depends
 from auth.views import router as auth_router
@@ -6,8 +14,10 @@ from auth.decorators import login_redirect
 from fastapi.responses import HTMLResponse
 from api.views import router as api_router
 from templates.templates import templates
-from auth.utils import get_user_contacts
+from chat.utils import get_user_chats
+from chat.constants import ChatAction
 from uvicorn import Config, Server
+from chat.models import ChatType
 from core.utils import listener
 from auth.schemes import User
 import asyncio
@@ -34,8 +44,15 @@ async def shutdown():
 @app.get('/', response_class=HTMLResponse)
 @login_redirect
 async def root(request: Request, user: User = Depends(get_current_active_user)):
-    contacts = await get_user_contacts(user.id)
-    return templates.TemplateResponse('index.html', {'request': request, 'user': user, 'contacts': contacts})
+    chats = await get_user_chats(user.id)
+    return templates.TemplateResponse(
+        'index.html',
+        {'request': request,
+         'user': user,
+         'chats': chats,
+         'chat_type': ChatType,
+         'chat_action': ChatAction}
+    )
 
 
 if __name__ == '__main__':

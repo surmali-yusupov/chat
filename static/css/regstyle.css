@@ -47,13 +47,15 @@ body {
 .form-input {
     color: #ffffff;
     height: 1.5rem;
-    border-radius: 0.3rem;
+    border: none;
+    border-bottom: solid 3px #9f9f9f;
+    background-color: transparent;
+    font-size: medium;
 }
 
-.form-input,
 .form-input:focus {
-    border: none;
-    background-color: transparent;
+    outline: none;
+    border-bottom: solid 3px #ffffff;
 }
 
 .form-btn {

@@ -3,7 +3,7 @@ from typing import Optional
 
 
 class UserBase(BaseModel):
-    username: str = Field(..., min_length=3, max_length=128)
+    username: str = Field(..., min_length=1, max_length=128)
 
 
 class LoginModel(UserBase):
@@ -17,6 +17,7 @@ class SignupModel(UserBase):
 
 class User(UserBase):
     id: Optional[int] = None
+    color: Optional[str] = '#1e8fa0'
     is_active: Optional[bool] = True
     is_superuser: Optional[bool] = False
     is_authenticated: Optional[bool] = False

@@ -1,7 +1,7 @@
 from auth.utils import hash_password, create_access_token, create_user
 from auth.schemes import User, TokenData, LoginModel
-from fastapi import APIRouter, Depends, Query
 from auth.oauth import get_current_active_user
+from fastapi import APIRouter, Depends, Query
 from auth.decorators import login_required
 from config.settings import get_settings
 from auth.models import UserTable
