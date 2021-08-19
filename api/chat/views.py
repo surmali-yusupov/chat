@@ -27,7 +27,7 @@ async def ws_user(websocket: WebSocket, user: int):
 
 
 @router.websocket('/chat/{user}/{chat}')
-async def ws_chat(websocket: WebSocket, user: int, chat: str):
+async def ws_chat(websocket: WebSocket, user: int, chat: int):
     try:
         await ws_chat_manager.connect(chat, user, websocket)
         while True:
@@ -55,6 +55,7 @@ async def create_chat(data: ChatCreate, user: User = Depends(get_current_active_
         await conn.commit()
         create_data = json.dumps(
             {'id': chat_id, 'sender': user.id, 'receivers': data.participants,
+             'participants': [p['user_id'] for p in participants],
              'name': data.name, 'type': data.type, 'action': ChatAction.CREATE.value}
         )
         await ws_user_manager.notify_subscribers(create_data)

@@ -6,8 +6,8 @@
 #                             _|     ____/
 #
 
+from chat.utils import get_user_contacts, get_chat_participants
 from sqlalchemy.ext.asyncio import create_async_engine
-from chat.utils import get_user_contacts
 from config.settings import get_settings
 from chat.constants import ChatAction
 from typing import Dict, Optional
@@ -42,34 +42,52 @@ rc_manager = RedisConnectionManager()
 
 class WSChatConnectionManager(metaclass=Singleton):
     def __init__(self):
-        self.connections: Dict[str, Dict[int, WebSocket]] = {}
+        self.connections: Dict[int, Dict[int, Optional[WebSocket]]] = {}
+        self.redis = RedisConnectionManager()
 
-    async def connect(self, chat: str, user_id: int, websocket: WebSocket):
+    async def connect(self, chat: int, user_id: int, websocket: WebSocket):
         await websocket.accept()
         if chat in self.connections:
             self.connections[chat][user_id] = websocket
         else:
-            self.connections[chat] = {user_id: websocket}
+            participants = await get_chat_participants(chat)
+            self.connections[chat] = {}
+            for p in participants:
+                self.connections[chat][p.id] = None
+            self.connections[chat][user_id] = websocket
+        while True:
+            msg = self.redis.conn.rpop(user_id)
+            if not msg:
+                break
+            await websocket.send_text(msg.decode('utf-8'))
 
-    async def disconnect(self, chat: str, user_id: int):
-        self.connections[chat].pop(user_id)
+    async def disconnect(self, chat: int, user_id: int):
+        self.connections[chat][user_id] = None
         if not self.connections[chat]:
             self.connections.pop(chat)
+        else:
+            for c in self.connections[chat].values():
+                if c is not None:
+                    break
+            else:
+                self.connections.pop(chat)
 
-    async def send_message(self, chat: str, message: str):
+    async def send_message(self, chat: int, message: str):
         connections = await self.match(chat)
-        for ws in connections.values():
-            await ws.send_text(message)
+        for c, ws in connections.items():
+            if ws is not None:
+                msg = self.redis.conn.lpop(c).decode('utf-8')
+                await ws.send_text(msg)
 
-    async def notify_subscribers(self, chat: str, message: str):
+    async def notify_subscribers(self, chat: int, message: str):
         msg = json.dumps({'chat': chat, 'message': message})
-        rc_manager.publish('chat', msg)
+        for c in self.connections[chat].keys():
+            self.redis.conn.rpush(c, message)
+            self.redis.conn.expire(c, 86400)  # expire in one day
+        self.redis.publish('chat', msg)
 
-    async def match(self, chat: str) -> Dict[int, WebSocket]:
-        try:
-            return self.connections[chat]
-        except:
-            return {}
+    async def match(self, chat: int) -> Dict[int, WebSocket]:
+        return self.connections[chat] if chat in self.connections else {}
 
 
 ws_chat_manager = WSChatConnectionManager()
@@ -78,6 +96,7 @@ ws_chat_manager = WSChatConnectionManager()
 class WSUserConnectionManager(metaclass=Singleton):
     def __init__(self):
         self.connections = {}
+        self.redis = RedisConnectionManager()
 
     async def connect(self, user_id: int, websocket: WebSocket):
         await websocket.accept()
@@ -92,7 +111,7 @@ class WSUserConnectionManager(metaclass=Singleton):
         return self.connections[user_id] if user_id in self.connections else None
 
     async def notify_subscribers(self, data: str):
-        rc_manager.publish('user', data)
+        self.redis.publish('user', data)
 
     async def chat_action(self, data: dict):
         receivers = data['receivers']
@@ -105,14 +124,16 @@ class WSUserConnectionManager(metaclass=Singleton):
     async def notify_contacts(self, data: dict):
         db = create_async_engine(settings.DATABASE_URL)
         sender_id = data['sender']
+        respond = data.get('respond', True)
         filter_contacts = data['receivers'] if 'receivers' in data else None
         contacts = await get_user_contacts(sender_id, filter_contacts, db)
         for c in contacts:
             ws = await self.match(c.id)
             if ws:
                 await ws.send_text(json.dumps(data))
-                response = json.dumps({'sender': c.id, 'receivers': [sender_id], 'action': ChatAction.CONNECT.value})
-                await self.notify_subscribers(response)
+                if respond:
+                    response = json.dumps({'sender': c.id, 'receivers': [sender_id], 'action': ChatAction.CONNECT.value, 'respond': False})
+                    await self.notify_subscribers(response)
         await db.dispose()
 
 

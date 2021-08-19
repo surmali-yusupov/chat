@@ -154,6 +154,8 @@ body {
     padding-top: 0.5rem;
     font-size: xx-large;
     text-transform: capitalize;
+    text-overflow: ellipsis;
+    overflow: hidden;
     font-weight: lighter;
     color: #ffffff;
 }
@@ -647,6 +649,7 @@ body {
     border-radius: 0.3rem;
     display: inline-block;
     position: absolute;
+    cursor: pointer;
     top: 0;
     left: 0;
 }

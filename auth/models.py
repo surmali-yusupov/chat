@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey
+from sqlalchemy import Integer, String, Boolean, Column, Table
 from database.database import metadata
 
 UserTable = Table(

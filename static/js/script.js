@@ -56,7 +56,7 @@ function onUserMessage(event) {
     let data = JSON.parse(event.data);
     if (data["action"] == CREATEACTION) {
         let contact = createContact(data["id"], data["sender"], data["name"], data["type"]);
-        createWS(contact.id, data["name"]);
+        createWS(contact.id, data["name"], data["participants"]);
         createMessageBox(contact.id);
     } else if (data["action"] == REMOVEACTION) {
         deleteContact(data["id"]);
@@ -170,7 +170,7 @@ function createGroup(e) {
                 let res = JSON.parse(this.responseText);
                 let chat = createContact(res["id"], userId, name, GROUPTYPE);
                 createMessageBox(chat.id);
-                createWS(chat.id, name);
+                createWS(chat.id, name, participants);
                 document.getElementById(chat.id).dispatchEvent(new Event("click"));
             }
         }
@@ -217,7 +217,7 @@ function addToChats(id, name) {
             let res = JSON.parse(this.responseText);
             let chat = createContact(res["id"], id, name);
             createMessageBox(chat.id);
-            createWS(chat.id, name);
+            createWS(chat.id, name, [+id]);
             document.getElementById(chat.id).dispatchEvent(new Event("click"));
         }
     }
@@ -244,6 +244,12 @@ function createContact(id, contactId, name, type = PRIVATETYPE) {
     contactLink.addEventListener("click", openChatBox);
     menuDrop.className = "contact-menu-dropdown";
     menuDrop.id = "menu-" + id;
+    if (type == GROUPTYPE) {
+        let infoBtn = document.createElement('span');
+        infoBtn.className = "contact-menu-entry info-btn";
+        infoBtn.innerText = "Info";
+        menuDrop.append(infoBtn);
+    }
     menuRemove.className = "contact-menu-entry remove-btn";
     menuRemove.innerText = type == PRIVATETYPE ? "Remove" : contactId == userId ? "Remove" : "Leave Group";
     menuRemove.addEventListener("click", removeContact);
@@ -254,8 +260,8 @@ function createContact(id, contactId, name, type = PRIVATETYPE) {
         contactStatus.innerHTML =
             `<svg id="status-${contactId}" viewBox="0 0 100 100" style="width: 0.4rem; height: 0.4rem"
              xmlns="http://www.w3.org/2000/svg" fill="#dddddd">
-            <circle cx="50" cy="50" r="50"></circle>
-        </svg>`;
+                <circle cx="50" cy="50" r="50"></circle>
+             </svg>`;
         let contactCheckbox = document.createElement("div");
         contactCheckbox.className = "checkbox-container";
         contactCheckbox.id = "contact-" + contactId;
@@ -315,14 +321,15 @@ function moveContactUp(id) {
 }
 
 function createChat(chat) {
-    createWS(chat.id, chat.innerText);
+    createWS(chat.id, chat.innerText, [+chat.dataset.userId]);
 }
 
-function createWS(id, name) {
+function createWS(id, name, participants = null) {
     let obj = {
-        "id": id,
+        "id": +id,
         "name": name,
-        "message": ""
+        "message": "",
+        "participants": participants
     };
     obj["ws"] = new ReconnectingWebSocket(ws_scheme + "://" + hostname + ":8000/chat/" + userId + "/" + obj["id"])
     obj["ws"].onmessage = onChatMessage;

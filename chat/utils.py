@@ -16,7 +16,8 @@ async def get_user_chats(user_id: int, engine=None) -> List[Chat]:
         ParticipantTable
             .join(ChatTable, ChatTable.c.id == ParticipantTable.c.chat_id) \
             .join(UserTable, UserTable.c.id == ParticipantTable.c.user_id)) \
-        .where(ChatTable.c.id.in_(subq.scalar_subquery()), ParticipantTable.c.user_id != user_id)
+        .where(ChatTable.c.id.in_(subq.scalar_subquery()), ParticipantTable.c.user_id != user_id) \
+        .order_by(ChatTable.c.id)
     async with db_engine.connect() as conn:
         res = await conn.execute(query)
         data = res.fetchall()
@@ -24,7 +25,6 @@ async def get_user_chats(user_id: int, engine=None) -> List[Chat]:
 
 
 async def parse_chats(data: List[Tuple]) -> List[Chat]:
-    data = sorted(data, key=lambda x: x[0])
     chat_id = c = None
     res = []
     for d in data:
