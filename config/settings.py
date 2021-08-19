@@ -11,12 +11,11 @@ class Settings(BaseSettings):
     ALGORITHM = "HS256"
     TOKEN_LIFETIME = timedelta(hours=24)
 
-    # DB_ABS_PATH = os.path.join(BASE_DIR, 'database/sqlite.db')
-    # DATABASE_URL = f'sqlite+aiosqlite:///{DB_ABS_PATH}'
-    DATABASE_URL = "postgresql+asyncpg://chatapp:chatapp@localhost:5432/chatapp"
+    DB_ABS_PATH = os.path.join(BASE_DIR, 'database/sqlite.db')
+    DATABASE_URL = f'sqlite+aiosqlite:///{DB_ABS_PATH}'
 
     # Set True if database is SQLite otherwise False
-    # RENDER_AS_BATCH = True
+    RENDER_AS_BATCH = True
 
     LOGIN_URL = '/auth/login'
 

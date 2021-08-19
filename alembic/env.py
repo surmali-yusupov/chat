@@ -46,8 +46,7 @@ def run_migrations_offline():
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
-    # url = settings.DATABASE_URL
+    url = config.get_main_option("sqlalchemy.url", settings.DATABASE_URL)
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -73,10 +72,12 @@ async def run_migrations_online():
     and associate a connection with the context.
 
     """
+    url = config.get_main_option("sqlalchemy.url", settings.DATABASE_URL)
     connectable = AsyncEngine(
         engine_from_config(
             config.get_section(config.config_ini_section),
             prefix="sqlalchemy.",
+            url=url,
             poolclass=pool.NullPool,
             future=True,
         )
