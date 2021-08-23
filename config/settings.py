@@ -1,3 +1,11 @@
+#
+#               |    |   _)
+#    __|   _ \  __|  __|  |  __ \    _` |   __|     __ \   |   |
+#  \__ \   __/  |    |    |  |   |  (   | \__ \     |   |  |   |
+#  ____/ \___| \__| \__| _| _|  _| \__, | ____/ _)  .__/  \__, |
+#                                  |___/           _|     ____/
+#
+
 from pydantic import BaseSettings
 from functools import lru_cache
 from datetime import timedelta

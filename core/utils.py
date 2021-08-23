@@ -56,7 +56,7 @@ class WSChatConnectionManager(metaclass=Singleton):
                 self.connections[chat][p.id] = None
             self.connections[chat][user_id] = websocket
         while True:
-            msg = self.redis.conn.rpop(user_id)
+            msg = self.redis.conn.lpop(user_id)
             if not msg:
                 break
             await websocket.send_text(msg.decode('utf-8'))
