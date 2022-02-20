@@ -1,8 +1,11 @@
 # PyCharm
 .idea
 
-alembic/versions
+alembic/versions/*
+!alembic/versions/.gitkeep
 dump.rdb
+
+sqlite.db
 
 # Environments
 .env

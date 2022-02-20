@@ -14,7 +14,7 @@ ChatTable = Table(
     Column('name', String(48), server_default=''),
     Column('creator', Integer, ForeignKey('users.id'), nullable=True),
     Column('type', Integer, server_default=str(ChatType.PRIVATE.value)),
-    CheckConstraint("type = ANY(ARRAY[{0}])".format(','.join(str(i.value) for i in ChatType)), name='check_type')
+    # CheckConstraint("type = ANY(ARRAY[{0}])".format(','.join(str(i.value) for i in ChatType)), name='check_type')
 )
 
 ParticipantTable = Table(
