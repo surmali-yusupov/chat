@@ -309,9 +309,10 @@ function deleteContact(id) {
 
 function sendRemoveUserMessage(id) {
     let xhttp = new XMLHttpRequest();
+    let data = JSON.stringify({"id": id});
     xhttp.open("POST", "/api/chat/remove", true);
     xhttp.setRequestHeader('Content-type', 'application/json');
-    xhttp.send(id);
+    xhttp.send(data);
 }
 
 function moveContactUp(id) {

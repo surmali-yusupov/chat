@@ -28,3 +28,7 @@ class ChatCreate(BaseModel):
     type: Optional[int] = ChatType.PRIVATE.value
     name: Optional[str] = ''
     participants: List[int]
+
+
+class ChatRemove(BaseModel):
+    id: int

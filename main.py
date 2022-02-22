@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from auth.decorators import login_redirect
 from fastapi.responses import HTMLResponse
 from api.views import router as api_router
+from database.database import db_configure
 from templates.templates import templates
 from chat.utils import get_user_chats
 from chat.constants import ChatAction
@@ -34,6 +35,7 @@ app.include_router(api_router)
 @app.on_event('startup')
 async def startup():
     listener.start()
+    db_configure()
 
 
 @app.on_event('shutdown')
