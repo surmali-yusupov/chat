@@ -233,7 +233,7 @@ function addToChats(id, name) {
             document.getElementById(chat.id).dispatchEvent(new Event("click"));
         }
     }
-    let chatData = JSON.stringify({"name": userName, "participants": [+id]});
+    let chatData = JSON.stringify({"participants": [+id]});
     xhttp.open("POST", "/api/chat/create", true);
     xhttp.setRequestHeader('Content-type', 'application/json');
     xhttp.send(chatData);

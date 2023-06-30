@@ -7,7 +7,6 @@
 #
 
 from chat.utils import get_user_contacts, get_chat_participants
-from sqlalchemy.ext.asyncio import create_async_engine
 from config.settings import get_settings
 from chat.constants import ChatAction
 from typing import Dict, Optional
@@ -83,7 +82,8 @@ class WSChatConnectionManager(metaclass=Singleton):
         msg = json.dumps({'chat': chat, 'message': message})
         for c in self.connections[chat].keys():
             self.redis.conn.rpush(c, message)
-            self.redis.conn.expire(c, 86400)  # expire in one day
+            # expire in one day
+            self.redis.conn.expire(c, 86400)
         self.redis.publish('chat', msg)
 
     async def match(self, chat: int) -> Dict[int, WebSocket]:
@@ -122,11 +122,10 @@ class WSUserConnectionManager(metaclass=Singleton):
                 await ws.send_text(data)
 
     async def notify_contacts(self, data: dict):
-        db = create_async_engine(settings.DATABASE_URL)
         sender_id = data['sender']
         respond = data.get('respond', True)
         filter_contacts = data['receivers'] if 'receivers' in data else None
-        contacts = await get_user_contacts(sender_id, filter_contacts, db)
+        contacts = await get_user_contacts(sender_id, filter_contacts)
         for c in contacts:
             ws = await self.match(c.id)
             if ws:
@@ -134,7 +133,6 @@ class WSUserConnectionManager(metaclass=Singleton):
                 if respond:
                     response = json.dumps({'sender': c.id, 'receivers': [sender_id], 'action': ChatAction.CONNECT.value, 'respond': False})
                     await self.notify_subscribers(response)
-        await db.dispose()
 
 
 ws_user_manager = WSUserConnectionManager()
