@@ -4,6 +4,8 @@
 alembic/versions
 dump.rdb
 
+sqlite.db
+
 # Environments
 .env
 .venv
@@ -16,5 +18,3 @@ venv.bak/
 __pycache__
 
 media/
-
-sqlite.db

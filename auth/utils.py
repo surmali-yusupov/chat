@@ -54,6 +54,16 @@ async def create_user(username: str, password: str, is_active=True, is_superuser
     return User(**data[0])
 
 
+async def search_users(q: str, limit: Optional[int] = None):
+    looking_for = '%{0}%'.format(q)
+    query = select(UserTable).where(UserTable.username.ilike(looking_for))
+    if limit:
+        query = query.limit(limit)
+    result = await execute_orm(query, commit=False, scalar=True)
+    data = result.all()
+    return data
+
+
 async def delete_user(id: int):
     query = delete(UserTable).where(UserTable.id == id).returning(UserTable.id)
     await execute_orm(query)

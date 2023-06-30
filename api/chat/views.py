@@ -62,7 +62,7 @@ async def chat_remove(chat_id: int = Body(...), user: User = Depends(get_current
     chat = await get_chat(chat_id)
     participants = await get_chat_participants(chat_id)
     receivers = [p.id for p in participants]
-    if chat['type'] == ChatType.PRIVATE.value or (chat['type'] == ChatType.GROUP.value and chat['creator'] == user.id):
+    if chat.type == ChatType.PRIVATE.value or (chat.type == ChatType.GROUP.value and chat.creator == user.id):
         await delete_chat(chat_id)
         remove_data = json.dumps(
             {'id': chat_id, 'receivers': receivers, 'action': ChatAction.REMOVE.value}

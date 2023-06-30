@@ -25,7 +25,7 @@ async def create_chat(info: ChatCreate, user: User) -> int:
     result = await execute_orm(query, data, scalar=True)
     chat_id = result.first()
     query = insert(ParticipantTable)
-    participants_data = [{'chat_id': chat_id, 'user_id': p.id} for p in participants]
+    participants_data = [{'chat_id': chat_id, 'user_id': p} for p in participants]
     participants_data.append({'chat_id': chat_id, 'user_id': user.id})
     await execute_orm(query, participants_data)
     return chat_id

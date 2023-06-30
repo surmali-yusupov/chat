@@ -2,5 +2,5 @@ from fastapi import HTTPException, status
 
 NotEnoughRights = HTTPException(
     status_code=status.HTTP_403_FORBIDDEN,
-    detail='Not enough rights',
+    detail='Permission Denied',
 )
