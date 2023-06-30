@@ -1,8 +1,8 @@
-from sqlalchemy import Integer, String, Boolean, Column, Table
-from database.database import metadata
+from sqlalchemy import String, Boolean, Table, Column, Integer
+from database.models import Base
 
-UserTable = Table(
-    'users', metadata,
+_user_table = Table(
+    'users', Base.metadata,
     Column('id', Integer, primary_key=True, index=True),
     Column('username', String(32), unique=True, index=True, nullable=False),
     Column('password', String(128), nullable=False),
@@ -11,8 +11,6 @@ UserTable = Table(
     Column('color', String(7), nullable=True, server_default='#1e8fa0'),
 )
 
-# ContactTable = Table(
-#     'contacts', metadata,
-#     Column('user_id1', Integer, ForeignKey('users.id'), primary_key=True),
-#     Column('user_id2', Integer, ForeignKey('users.id'), primary_key=True),
-# )
+
+class UserTable(Base):
+    __table__ = _user_table

@@ -1,13 +1,14 @@
 from .exceptions import UserNotFound, IncorrectPassword, notAuthenticated
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
+from sqlalchemy import select, insert, update, delete
 from passlib.context import CryptContext
 from datetime import timedelta, datetime
 from config.settings import get_settings
+from database.utils import execute_orm
 from .schemes import User, LoginModel
 from fastapi.security import OAuth2
 from typing import Optional, Dict
-from database.database import db
 from .models import UserTable
 from fastapi import Request
 from jose import jwt
@@ -25,39 +26,37 @@ def hash_password(password):
 
 
 async def get_user(username: str) -> User:
-    query = UserTable.select().where(UserTable.c.username == username)
-    async with db.connect() as conn:
-        response = await conn.execute(query)
-        data = response.fetchone()
-        if data:
-            return User(**data)
+    query = select(UserTable).where(UserTable.username == username)
+    result = await execute_orm(query, commit=False, scalar=True)
+    data = result.first()
+    if data:
+        return User.from_orm(data)
     raise UserNotFound
 
 
 async def authenticate_user(username: str, password: str) -> LoginModel:
-    query = UserTable.select().where(UserTable.c.username == username)
-    async with db.connect() as conn:
-        response = await conn.execute(query)
-        data = response.fetchone()
-        if data:
-            user = LoginModel(**data)
-            if not verify_password(password, user.password):
-                raise IncorrectPassword
-            return user
-    raise UserNotFound
+    user = await get_user(username)
+    if not verify_password(password, user.password):
+        raise IncorrectPassword
+    return LoginModel(**user.dict())
 
 
 async def create_user(username: str, password: str, is_active=True, is_superuser=False):
     color = await generate_user_color(username)
-    query = UserTable.insert() \
-        .values(username=username,
-                password=password,
-                is_active=is_active,
-                is_superuser=is_superuser,
-                color=color)
-    async with db.connect() as conn:
-        await conn.execute(query)
-        await conn.commit()
+    query = insert(UserTable).returning(UserTable)
+    data = ({'username': username,
+             'password': hash_password(password),
+             'is_active': is_active,
+             'is_superuser': is_superuser,
+             'color': color,
+             },)
+    await execute_orm(query, data, scalar=True)
+    return User(**data[0])
+
+
+async def delete_user(id: int):
+    query = delete(UserTable).where(UserTable.id == id).returning(UserTable.id)
+    await execute_orm(query)
 
 
 async def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

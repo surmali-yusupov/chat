@@ -1,5 +1,5 @@
-from sqlalchemy import Integer, String, Column, Table, ForeignKey, CheckConstraint
-from database.database import metadata
+from sqlalchemy import String, ForeignKey, Integer, CheckConstraint, Table, Column
+from database.models import Base
 import enum
 
 
@@ -8,17 +8,25 @@ class ChatType(enum.Enum):
     GROUP = 2
 
 
-ChatTable = Table(
-    'chats', metadata,
+_chat_table = Table(
+    'chats', Base.metadata,
     Column('id', Integer, primary_key=True, index=True),
     Column('name', String(48), server_default=''),
     Column('creator', Integer, ForeignKey('users.id'), nullable=True),
     Column('type', Integer, server_default=str(ChatType.PRIVATE.value)),
-    CheckConstraint("type = ANY(ARRAY[{0}])".format(','.join(str(i.value) for i in ChatType)), name='check_type')
+    CheckConstraint('type IN ({0})'.format(','.join(str(i.value) for i in ChatType)), name='type_check_constraint')
 )
 
-ParticipantTable = Table(
-    'participants', metadata,
+_participant_table = Table(
+    'participants', Base.metadata,
     Column('chat_id', Integer, ForeignKey('chats.id', ondelete='CASCADE'), primary_key=True),
     Column('user_id', Integer, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
 )
+
+
+class ChatTable(Base):
+    __table__ = _chat_table
+
+
+class ParticipantTable(Base):
+    __table__ = _participant_table

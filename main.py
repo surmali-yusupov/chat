@@ -45,11 +45,12 @@ async def shutdown():
 @login_redirect
 async def root(request: Request, user: User = Depends(get_current_active_user)):
     chats = await get_user_chats(user.id)
+    chats_arr = [c.dict() for c in chats]
     return templates.TemplateResponse(
         'index.html',
         {'request': request,
          'user': user,
-         'chats': chats,
+         'chats': chats_arr,
          'chat_type': ChatType,
          'chat_action': ChatAction}
     )

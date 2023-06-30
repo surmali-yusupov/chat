@@ -23,9 +23,9 @@ fileConfig(config.config_file_name)
 # for 'autogenerate' support
 from chat.models import ChatTable, ParticipantTable
 from auth.models import UserTable
-from database.database import metadata
+from database.models import Base
 
-target_metadata = metadata
+target_metadata = (Base.metadata,)
 
 
 # other values from the config, defined by the needs of env.py,

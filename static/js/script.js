@@ -1,3 +1,11 @@
+//
+//                    _)         |       _)
+//    __|   __|   __|  |   __ \  __|      |   __|
+//  \__ \  (     |     |  |   |  |        | \__ \
+//  ____/ \___| _|    _|  .__/  \__| _|   | ____/
+//                       _|           ___/
+//
+
 let ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
 let menuLink = document.getElementById("menu-link");
 let userId = +document.getElementById("user-id").value;
@@ -16,7 +24,7 @@ let searchInput = document.getElementById("search-input");
 let chatsBox = document.getElementById("chats-box");
 let searchBox = document.getElementById("search-box");
 let chatBox = document.getElementById("chat-box");
-let userWs = new ReconnectingWebSocket(ws_scheme + "://" + hostname + ":8000/chat/" + userId)
+let userWs = new ReconnectingWebSocket(ws_scheme + "://" + hostname + ":8000/api/chat/" + userId);
 let PRIVATETYPE = +document.getElementById("chat-type-private").value;
 let GROUPTYPE = +document.getElementById("chat-type-group").value;
 let CONNECTACTION = +document.getElementById("chat-action-connect").value;
@@ -28,7 +36,8 @@ userWs.onmessage = onUserMessage;
 let currentChat;
 let chats = [];
 
-function setup() {
+// Gets called from index.html
+function setup(ctatsArr) {
     let contacts = document.getElementsByClassName("contact");
     let removeBtns = document.getElementsByClassName("remove-btn");
     let groupCreateModalBtn = document.getElementById("group-create-modal-btn");
@@ -40,8 +49,11 @@ function setup() {
     for (let i = 0; i < modalCloseButtons.length; i++) {
         modalCloseButtons[i].addEventListener("click", modalClose);
     }
-    for (let i = 0; i < contacts.length; i++) {
-        createChat(contacts[i].firstElementChild);
+    // for (let i = 0; i < contacts.length; i++) {
+    //     createChat(contacts[i].firstElementChild);
+    // }
+    for (let i = 0; i < ctatsArr.length; i++) {
+        createWS(ctatsArr[i].id, ctatsArr[i].name, ctatsArr[i].participants);
     }
     for (let i = 0; i < removeBtns.length; i++) {
         removeBtns[i].addEventListener("click", removeContact);
@@ -139,7 +151,7 @@ function sendMessage() {
     moveContactUp(chats[currentChat]["id"]);
 }
 
-function onEent(event) {
+function onEvent(event) {
     chatInput.dispatchEvent(new Event("change"));
 }
 
@@ -200,7 +212,7 @@ function openChatBox(e) {
                 chatInputBox.style.display = "flex";
                 chatInput.value = chats[currentChat]["message"];
             }
-            onEent();
+            onEvent();
             resetSearch();
         } else {
             document.getElementById(chatBoxes[i].id.split("-")[1])
@@ -331,11 +343,11 @@ function createWS(id, name, participants = null) {
         "message": "",
         "participants": participants
     };
-    obj["ws"] = new ReconnectingWebSocket(ws_scheme + "://" + hostname + ":8000/chat/" + userId + "/" + obj["id"])
+    obj["ws"] = new ReconnectingWebSocket(ws_scheme + "://" + hostname + ":8000/api/chat/" + userId + "/" + obj["id"])
     obj["ws"].onmessage = onChatMessage;
-    obj["ws"].onopen = onEent;
-    obj["ws"].onerror = onEent;
-    obj["ws"].onclose = onEent;
+    obj["ws"].onopen = onEvent;
+    obj["ws"].onerror = onEvent;
+    obj["ws"].onclose = onEvent;
     chats.push(obj);
 }
 

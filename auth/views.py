@@ -55,7 +55,7 @@ async def login(request: Request, next: Optional[str] = Query('/')):
     token = jsonable_encoder(access_token)
     response = RedirectResponse(url=next, status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie('Authorization', value=f'Bearer {token}', domain=request.base_url.hostname,
-                        httponly=True, max_age=3600 * 24, expires=3600 * 24)
+                        httponly=True, max_age=60 * 60 * 24, expires=60 * 60 * 24)
     return response
 
 

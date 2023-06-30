@@ -15,6 +15,9 @@ class Participant(BaseModel):
     id: int
     username: str
 
+    class Config:
+        orm_mode = True
+
 
 class Chat(BaseModel):
     id: int
@@ -22,6 +25,9 @@ class Chat(BaseModel):
     name: Optional[str] = ''
     creator: Optional[int] = None
     participants: List[Participant] = []
+
+    class Config:
+        orm_mode = True
 
 
 class ChatCreate(BaseModel):

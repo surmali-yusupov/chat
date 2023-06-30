@@ -133,7 +133,8 @@
 
 {% block scripts %}
     <script>
-        setup();
+        let ctatsArr = {{ chats|safe }};
+        setup(ctatsArr);
     </script>
 {% endblock %}
 

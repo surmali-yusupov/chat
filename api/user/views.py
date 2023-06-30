@@ -4,8 +4,8 @@ from auth.oauth import get_current_active_user
 from fastapi import APIRouter, Depends, Query
 from auth.decorators import login_required
 from config.settings import get_settings
+from database.utils import execute_orm
 from auth.models import UserTable
-from database.database import db
 from sqlalchemy import and_
 from typing import List
 
@@ -20,10 +20,9 @@ async def users_list(q: str = Query(..., max_length=255), user: User = Depends(g
     query = UserTable.select().where(
         and_(UserTable.c.username.ilike(looking_for), UserTable.c.id != user.id)
     ).limit(10)
-    async with db.connect() as conn:
-        response = await conn.execute(query)
-        data = response.fetchall()
-        return data
+    result = await execute_orm(query, commit=False, scalar=True)
+    data = result.all()
+    return data
 
 
 @router.get('/me', response_model=User)
